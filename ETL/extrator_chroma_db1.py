@@ -19,7 +19,6 @@ class Extrator():
     def run(self, arquivo: List[str], exibir: bool = False, salvar_db: bool = False) -> None:
         start_time = time.time()  # Início da medição de tempo
         resumo = cria_lista_de_linhas(arquivo)
-
         procurar_itens_start_time = time.time()
         self.procurar_itens(resumo)
         procurar_itens_end_time = time.time()
@@ -32,7 +31,6 @@ class Extrator():
             salvar_db_end_time = time.time()
 
         end_time = time.time()  # Fim da medição de tempo
-
         print(f"Tempo total de execução: {end_time - start_time:.2f} segundos")
         print(f"Tempo para procurar itens: {procurar_itens_end_time - procurar_itens_start_time:.2f} segundos")
         if salvar_db:
@@ -65,15 +63,6 @@ class Extrator():
                 if regex[1].search(texto):
                     marcadores.append(regex[0])
             marcadores = list(set(marcadores))
-            if 'RECONVENCAO_PROCEDENTE' in marcadores:
-                if 'PROCEDENTE' in marcadores:
-                    marcadores.remove('PROCEDENTE')
-            if 'RECONVENCAO_IMPROCEDENTE' in marcadores:
-                if 'IMPROCEDENTE' in marcadores:
-                    marcadores.remove('IMPROCEDENTE')
-            if 'RECONVENCAO_PROCEDENTE_PARCIAL' in marcadores:
-                if 'PROCEDENTE_EM_PARTE' in marcadores:
-                    marcadores.remove('PROCEDENTE_EM_PARTE')
         if not marcadores:
             marcadores.append('NAO_CLASSIFICADO')
         return marcadores
@@ -101,7 +90,7 @@ if __name__ == '__main__':
     try:
         with open(caminho, 'r', encoding='utf-8') as f:
             arq = f.readlines()
-        ex.run(arq, exibir=False, salvar_db=True)
+        ex.run(arq, exibir=True, salvar_db=False)
     except Exception as e:
         print(f"Erro ao processar o arquivo: {e}")
 
