@@ -1,16 +1,19 @@
 import re
 import time
+import glob
 from typing import List
+from sqlalchemy.exc import SQLAlchemyError
+import pandas as pd
 from util.marcadores import marcador
 from util.separador_blocos import cria_lista_de_linhas
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
-from models_db.models import Processo
+from models_db.m.models import Processo
+from contextlib import contextmanager
 
 DATABASE_URL = "postgresql+psycopg2://postgres:postgrespw@localhost:15432/diarios_uf"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
-session = Session()
 
 class Extrator():
     def __init__(self):
@@ -18,6 +21,7 @@ class Extrator():
 
     def run(self, arquivo: List[str], exibir: bool = False, salvar_db: bool = False, fonte: str = "") -> None:
         start_time = time.time()
+        fonte = fonte.split('\\')[-1].split('.')[0]
         resumo = cria_lista_de_linhas(arquivo)
         self.procurar_itens(resumo)
         if exibir:
@@ -59,29 +63,46 @@ class Extrator():
 
     def salva_banco(self, blocos: List[str], fonte: str) -> None:
         lista_sentencas = marcador()
-        for i, pedaco in enumerate(blocos):
-            npus_bloco = re.findall(r'\d{7}\s*[\.\-]\s*?\d{2}\s*[\.\-]\s*\d{4}\s*[\.\-]\s*\d\s*[\.\-]\s*\d{2}\s*[\.\-]\s*\d{4}', pedaco)
+        data = []
+
+        for pedaco in blocos:
             marcadores = self.matches_de_marcador(pedaco, lista_sentencas)
+            data.append({
+                'texto_pedaco': pedaco,
+                'marcadores': ','.join(marcadores),
+                'fonte': fonte
+            })
+
+        df = pd.DataFrame(data)
+        df = df.drop_duplicates(subset=['texto_pedaco', 'marcadores', 'fonte'])
+        self.descarregar_no_banco(df)
+
+    @contextmanager
+    def get_session(self):
+        session = Session()
+        try:
+            yield session
+        except SQLAlchemyError as e:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def descarregar_no_banco(self, df: pd.DataFrame) -> None:
+        with self.get_session() as session:
             try:
-                novo_processo = Processo(
-                    npu=', '.join(npus_bloco),
-                    texto_pedaco=pedaco,
-                    marcadores=','.join(marcadores),
-                    fonte=fonte
-                )
-                session.add(novo_processo)
+                registros = df.to_dict(orient='records')
+                processos = [Processo(**registro) for registro in registros]
+                session.bulk_save_objects(processos)
                 session.commit()
-            except Exception as e:
+            except SQLAlchemyError as e:
                 print(f"Erro ao salvar no banco de dados: {e}")
                 session.rollback()
 
 if __name__ == '__main__':
-    import glob
-
-    ex = Extrator()
     caminhos = glob.glob(r"D:\diarios\SP\2021\01\*.txt")
-
-    for caminho in caminhos:
+    for caminho in caminhos[1:]:
+        ex = Extrator()
         try:
             with open(caminho, 'r', encoding='utf-8') as f:
                 arq = f.readlines()

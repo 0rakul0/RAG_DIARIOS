@@ -1,49 +1,44 @@
 from crewai import Agent, Task, Crew
 from langchain_community.llms import Ollama
-from models_db.database import executar_query_sql
-from util.utilString import remove_acentos
+from models_db.v.view import executar_query_sql
+from models_db.m.models import Processo
 
 llm = Ollama(
     model="llama3",
     base_url="http://localhost:11434"
 )
 
-table_structure = """
-Estrutura da tabela blocos_processos:
-- npu: STRING
-- texto_pedaco: TEXT
-- marcadores: STRING
-- data_created: TIMESTAMP
-- fonte: STRING
-"""
-
 class CustomAgent(Agent):
 
     def generate_sql_query(self, user_query: str):
         prompt = f"""
-        Use a seguinte estrutura da tabela {table_structure} para converter o pedido do usuário em uma consulta SQL:       
-        Pedido do usuário: '{remove_acentos(user_query)}'
-        """
+         use o pedido do usuário: '{user_query}' para gerar uma query de SQL.
+         Use a seguinte estrutura da tabela {Processo.table_structure} para converter o pedido.
+         exemplo de consulta: SELECT * FROM diarios.blocos_processos where <coluna_solicitada> LIKE '%<npu_solicitada>%';
+         só responda com a query sugerida
+         """
         response = self.llm(prompt)
-        return response.strip()
+        query = str(response).replace('\n', '')
+        return query
 
     def handle_query(self, query: str):
         sql_query = self.generate_sql_query(query)
-        print(sql_query)
-        return executar_query_sql(sql_query)
+        resultado = executar_query_sql(sql_query)
+        return resultado
 
 agent = CustomAgent(
     role="Você é um especialista em consultas de banco de dados processuais.",
-    goal="Forneça dados processuais de acordo com a consulta fornecida.",
+    goal="Forneça dados processuais de acordo com a consulta fornecida, caso o tipo da coluna seja STRING use LIKE",
     backstory="Você é um excelente pesquisador que traz informações dos processos.",
     allow_delegation=False,
-    verbose=True,
+    verbose=False,
     llm=llm,
 )
 
 def create_task(agent, query):
-    description = f"Realizar consulta no banco de dados processuais com o termo: {query}"
-    expected_output = agent.handle_query(query)
+    description = (f"""Realizar consulta no banco de dados processuais com o termo: {query}.Caso seja um NPU, não altere a estrutura do NPU, pois no banco está salvo sem estar formatado.""")
+    resposta = agent.handle_query(query)
+    expected_output = f"Resultado da consulta: {resposta}"
     return Task(description=description, agent=agent, expected_output=expected_output)
 
 if __name__ == '__main__':
