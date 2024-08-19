@@ -17,6 +17,5 @@ class Processo(Base):
             - id: INTERGER
             - texto_pedaco: TEXT
             - marcadores: STRING
-            - data_created: TIMESTAMP
             - fonte: STRING
             """
