@@ -8,7 +8,6 @@ from langchain_community.llms import Ollama
 from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from sentence_transformers import SentenceTransformer
 
 nest_asyncio.apply()
 
