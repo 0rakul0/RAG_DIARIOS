@@ -25,7 +25,7 @@ def main():
     LlamaSettings.llm = llm
 
     # Inicializar cliente ChromaDB
-    chrma_cliente = db.PersistentClient(path="D:\github\pySparkProject\ETL\db_banco_1")
+    chrma_cliente = db.PersistentClient(path="/ETL/db_banco_1")
     collection = chrma_cliente.get_or_create_collection(name="diario")
 
     # FERRAMENTA DO AGENTE

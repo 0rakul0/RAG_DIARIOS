@@ -17,7 +17,7 @@ query = input("escreva o que está buscando: ").upper()
 query_embedding = embed_text(query)
 
 chrma_cliente = db.Client()
-chrma_cliente = db.PersistentClient(path="db_banco_1")
+chrma_cliente = db.PersistentClient(path="../db_banco_1")
 collection = chrma_cliente.get_or_create_collection(name="diario")
 
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
