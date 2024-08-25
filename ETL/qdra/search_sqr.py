@@ -7,6 +7,7 @@ from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain_community.llms import Ollama
 from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from sentence_transformers import SentenceTransformer
 
 nest_asyncio.apply()
@@ -22,7 +23,7 @@ llm = Ollama(
 )
 
 # chama o encoder
-embedd = SentenceTransformer('all-MiniLM-L6-v2')
+embedd = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
 
 # chama o banco
 cliente = QdrantClient(url="http://localhost:6333")
@@ -65,7 +66,8 @@ response = retriver.invoke("Quais vinhos dos US têm preço entre 15 e 30 e pont
 
 if response != None:
     for res in response:
-        print(res.metadata['title'],
+        print(res.page_content,
+              '\n',res.metadata['title'],
               '\n price: ', res.metadata['price'],
               '\n points: ', res.metadata['points'],
               '\n\n')

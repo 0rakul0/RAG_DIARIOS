@@ -1,10 +1,7 @@
+import warnings
+
 from qdrant_client import models, QdrantClient
 from sentence_transformers import SentenceTransformer
-import pandas as pd
-import warnings
-import logging
-from tqdm import tqdm
-
 
 warnings.filterwarnings("ignore")
 
